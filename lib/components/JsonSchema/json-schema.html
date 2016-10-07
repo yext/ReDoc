@@ -73,11 +73,14 @@
               <span *ngIf="prop._required" class="param-required">Required</span>
               <span *ngIf="prop['x-nullable']" class="param-nullable">Nullable</span>
               <div *ngIf="prop.default != null">Default: {{prop.default | json}}</div>
-              <div *ngIf="prop.enum && !prop.isDiscriminator" class="param-enum">
-                <span *ngFor="let enumItem of prop.enum" class="enum-value {{enumItem.type}}"> {{enumItem.val | json}} </span>
-              </div>
             </div>
             <div class="param-description" [innerHtml]="prop.description | marked"></div>
+            <div *ngIf="prop.enum && !prop.isDiscriminator" class="param-enum">
+              <p class="param-enum-header">One of:</p>
+              <ul>
+                <li *ngFor="let enumItem of prop.enum" class="enum-value {{enumItem.type}}"> {{enumItem.val | json}} </li>
+              </ul>
+            </div>
             <div class="discriminator-info" *ngIf="prop.isDiscriminator">
               <span>This field value determines the exact schema:</span>
               <drop-down (change)="selectDescendant($event)">

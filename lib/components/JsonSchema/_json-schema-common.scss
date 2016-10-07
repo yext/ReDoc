@@ -172,21 +172,12 @@ $sub-schema-offset: ($bullet-size / 2) + $bullet-margin;
   color: $text-color;
   font-size: 13px;
 
-  &:before {
-    content: 'Values: {';
-  }
-
-  &:after {
-    content: '}';
+  .param-enum-header {
+    margin-top: 20px;
+    margin-bottom: 0;
   }
 
   > .enum-value {
-    &:after {
-      content: ", ";
-    }
 
-    &:last-of-type:after {
-      content: none;
-    }
   }
 }
