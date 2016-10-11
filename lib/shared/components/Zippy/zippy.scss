@@ -1,7 +1,9 @@
-$zippy-success-color: #00aa13;
+@import '../../styles/variables';
+
+$zippy-success-color: $yext-green;
 $zippy-success-bg-color: rgba($zippy-success-color, .08);
 
-$zippy-error-color: #e53935;
+$zippy-error-color: $yext-red;
 $zippy-error-bg-color: rgba($zippy-error-color, .06);
 
 $zippy-info-color: #0033a0;
@@ -19,6 +21,8 @@ $zippy-redirect-bg-color: rgba($zippy-redirect-color, .08);
 }
 
 .zippy-title {
+  font-family: ProximaNova-Semibold;
+  font-size: 1.143em;
   padding: 10px;
   border-radius: 2px;
   margin-bottom: 4px;

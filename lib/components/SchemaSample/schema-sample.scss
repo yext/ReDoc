@@ -73,7 +73,7 @@ pre {
   }
 
   .type-string {
-    color: #66B16E;
+    color: $yext-green;
   }
 
   .callback-function {
@@ -119,7 +119,7 @@ pre {
       overflow-x: auto;
       padding: 20px;
       border-radius: $border-radius*2;
-      background-color: darken($black, 2%);
+      background-color: $grey9;
       margin-bottom: 36px;
   }
 

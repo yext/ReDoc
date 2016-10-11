@@ -13,7 +13,7 @@
 }
 
 h2 {
-  color: $secondary-color;
+  color: $grey8;
 }
 
 responses-list, params-list {
@@ -21,6 +21,8 @@ responses-list, params-list {
 }
 
 .method-header {
+  font-weight: bold;
+  font-size: 1.43em;
   margin-bottom: .9em;
 }
 
@@ -28,7 +30,7 @@ responses-list, params-list {
   margin: 0 0 2em 0;
   padding: 10px 20px;
   border-radius: $border-radius*2;
-  background-color: darken($black, 2%);
+  background-color: $grey9;
   display: block;
   font-weight: $light;
   white-space: nowrap;
@@ -40,7 +42,7 @@ responses-list, params-list {
   padding-bottom: 0;
   margin: 0;
   font-size: .8em;
-    color: $black;
+  color: $text-light;
   vertical-align: middle;
   display: inline-block;
   border-radius: $border-radius;
