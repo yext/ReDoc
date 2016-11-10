@@ -1,12 +1,11 @@
 // Colors
 // ---------------------------
 $primary-color : #4d6272;
-$secondary-color : #263238;
+$secondary-color : #3a4856;
 $black : #4d6272;
 $green : #00aa13;
 $yellow : #f1c400;
 $red : #e53935;
-$grey8 : #3a4856;
 $grey9 : #313a47;
 $yext-green : #239f25;
 $yext-red : #f02615;
@@ -58,7 +57,7 @@ $side-menu-item-vpadding: 5px;
 
 // Sample Panel
 // ---------------------------
-$samples-panel-bg-color: $grey8;
+$samples-panel-bg-color: $secondary-color;
 $samples-panel-width: 40%;
 $sample-panel-headers-color: lighten($black, 50%);
 $sample-panel-color: lighten($black, 80%);
