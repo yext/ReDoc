@@ -1,7 +1,7 @@
 'use strict';
 import { JsonPointer } from '../utils/JsonPointer';
-import { SpecManager } from '../utils/SpecManager';
-import {methods as swaggerMethods, keywordTypes} from  '../utils/swagger-defs';
+import { SpecManager } from '../utils/spec-manager';
+import { methods as swaggerMethods, keywordTypes } from  '../utils/swagger-defs';
 import { WarningsService } from './warnings.service';
 import * as slugify from 'slugify';
 
@@ -14,6 +14,7 @@ export interface MenuMethod {
   active: boolean;
   summary: string;
   tag: string;
+  pointer: string;
 }
 
 export interface MenuCategory {
@@ -113,6 +114,7 @@ const injectors = {
       injectTo._displayTypeHint = 'This field may contain data of any type';
       injectTo.isTrivial = true;
       injectTo._widgetType = 'trivial';
+      injectTo._pointer = undefined;
     }
   },
   simpleType: {
@@ -137,16 +139,16 @@ const injectors = {
     check: (propertySchema) => (propertySchema.type === 'integer' || propertySchema.type === 'number'),
     inject: (injectTo, propertySchema = injectTo) => {
       var range = '';
-      if (propertySchema.minimum && propertySchema.maximum) {
+      if (propertySchema.minimum != undefined && propertySchema.maximum != undefined) {
         range += propertySchema.exclusiveMinimum ? '( ' : '[ ';
         range += propertySchema.minimum;
         range += ' .. ';
         range += propertySchema.maximum;
         range += propertySchema.exclusiveMaximum ? ' )' : ' ]';
-      } else if (propertySchema.maximum) {
+      } else if (propertySchema.maximum != undefined) {
         range += propertySchema.exclusiveMaximum? '< ' : '<= ';
         range += propertySchema.maximum;
-      } else if (propertySchema.minimum) {
+      } else if (propertySchema.minimum != undefined) {
         range += propertySchema.exclusiveMinimum ? '> ' : '>= ';
         range += propertySchema.minimum;
       }
@@ -160,11 +162,11 @@ const injectors = {
     check: propertySchema => (propertySchema.type === 'string'),
     inject: (injectTo, propertySchema = injectTo) => {
       var range;
-      if (propertySchema.minLength && propertySchema.maxLength) {
+      if (propertySchema.minLength != undefined && propertySchema.maxLength != undefined) {
         range = `[ ${propertySchema.minLength} .. ${propertySchema.maxLength} ]`;
-      } else if (propertySchema.maxLength) {
+      } else if (propertySchema.maxLength != undefined) {
         range = '<= ' + propertySchema.maxLength;
-      } else if (propertySchema.minLength) {
+      } else if (propertySchema.minLength != undefined) {
         range = '>= ' + propertySchema.minLength;
       }
 
@@ -261,8 +263,9 @@ export class SchemaHelper {
   static unwrapArray(schema, pointer) {
     var res = schema;
     if (schema && schema.type === 'array' && !Array.isArray(schema.items)) {
-      let ptr = schema.items._pointer || JsonPointer.join(pointer, ['items']);
-      res = schema.items;
+      let items = schema.items = schema.items || {};
+      let ptr = items._pointer || JsonPointer.join(pointer, ['items']);
+      res = items;
       res._isArray = true;
       res._pointer = ptr;
       res = SchemaHelper.unwrapArray(res, ptr);

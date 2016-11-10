@@ -1,6 +1,6 @@
 'use strict';
 import { Injectable } from '@angular/core';
-import { SpecManager } from '../utils/SpecManager';
+import { SpecManager } from '../utils/spec-manager';
 import { JsonPointer } from '../utils/JsonPointer';
 import { defaults } from '../utils/helpers';
 import { WarningsService } from './warnings.service';
@@ -28,7 +28,7 @@ export class SchemaNormalizer {
     if (opts.resolved && !hasPtr) this._dereferencer.visit(ptr);
 
     if (schema['x-redoc-normalized']) return schema;
-    let res = SchemaWalker.walk(schema, ptr, (subSchema, ptr) => {
+      let res = SchemaWalker.walk(schema, ptr, (subSchema, ptr) => {
       let resolved = this._dereferencer.dereference(subSchema, ptr);
       if (resolved.allOf) {
         resolved._pointer = resolved._pointer || ptr;

@@ -1,9 +1,13 @@
-<div class="redoc-wrap">
+<div class="redoc-error" *ngIf="error">
+  <h1>Oops... ReDoc failed to render this spec</h1>
+  <div class='redoc-error-details'>{{error.message}}</div>
+</div>
+<div class="redoc-wrap" *ngIf="specLoaded && !error">
   <div class="menu-content" sticky-sidebar [scrollParent]="options.$scrollParent" [scrollYOffset]="options.scrollYOffset">
       <api-logo> </api-logo>
       <side-menu> </side-menu>
   </div>
-  <div id="api-content">
+  <div class="api-content">
     <warnings></warnings>
     <api-info></api-info>
     <methods-list> </methods-list>

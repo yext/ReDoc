@@ -3,7 +3,7 @@ import './components/Redoc/redoc-initial-styles.css';
 
 import { enableProdMode } from '@angular/core';
 import { Redoc } from './components/index';
-import { SpecManager } from './utils/SpecManager';
+import { SpecManager } from './utils/spec-manager';
 import { BrowserDomAdapter as DOM } from './utils/browser-adapter';
 import { disableDebugTools } from '@angular/platform-browser';
 
@@ -29,25 +29,19 @@ export function init(specUrl:string, options:any = {}) {
 
   Redoc._preOptions = options;
   options.specUrl = options.specUrl || specUrl;
-
-  Redoc.showLoadingAnimation();
-  return SpecManager.instance().load(specUrl)
-  .then(() => {
-    return bootstrapRedoc();
-  })
+  return bootstrapRedoc()
   .then(appRef => {
-    Redoc.hideLoadingAnimation();
     moduleRef = appRef;
     console.log('ReDoc initialized!');
   }).catch(err => {
-    Redoc.hideLoadingAnimation();
-    Redoc.displayError(err);
+    //Redoc.displayError(err);
     throw err;
   });
 };
 
 export function destroy() {
   moduleRef.destroy();
+  moduleRef = null;
 };
 
 

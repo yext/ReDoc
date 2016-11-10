@@ -1,6 +1,6 @@
 'use strict';
 import { Injectable } from '@angular/core';
-import { isFunction, isString } from '@angular/core/src/facade/lang';
+import { isFunction, isString } from '../utils/helpers';
 import { BrowserDomAdapter as DOM } from '../utils/browser-adapter';
 
 const defaults = {
@@ -8,7 +8,7 @@ const defaults = {
   disableLazySchemas: false
 };
 
-const OPTION_NAMES = new Set(['scrollYOffset', 'disableLazySchemas', 'specUrl', 'suppressWarnings']);
+const OPTION_NAMES = new Set(['scrollYOffset', 'disableLazySchemas', 'specUrl', 'suppressWarnings', 'hideHostname']);
 
 @Injectable()
 export class OptionsService {
@@ -69,5 +69,6 @@ export class OptionsService {
 
     if (isString(this._options.disableLazySchemas)) this._options.disableLazySchemas = true;
     if (isString(this._options.suppressWarnings)) this._options.suppressWarnings = true;
+    if (isString(this._options.hideHostname)) this._options.hideHostname = true;
   }
 }

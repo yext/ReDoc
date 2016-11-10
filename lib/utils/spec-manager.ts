@@ -2,15 +2,20 @@
 
 import * as JsonSchemaRefParser from 'json-schema-ref-parser';
 import { JsonPointer } from './JsonPointer';
-import { renderMd, safePush } from './helpers';
-import * as slugify from 'slugify';
 import { parse as urlParse, resolve as urlResolve } from 'url';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+
+import { MdRenderer } from './md-renderer';
 
 export class SpecManager {
   public _schema: any = {};
   public apiUrl: string;
+  public basePath: string;
+
+  public spec = new BehaviorSubject<any|null>(null);
   private _instance: any;
   private _url: string;
+  private parser: any;
 
   static instance() {
     return new SpecManager();
@@ -24,16 +29,23 @@ export class SpecManager {
     SpecManager.prototype._instance = this;
   }
 
-  load(url) {
+  load(urlOrObject: string|Object) {
+    this.schema = null;
     let promise = new Promise((resolve, reject) => {
-      this._schema = {};
-
-      JsonSchemaRefParser.bundle(url, {http: {withCredentials: false}})
+      this.parser = new JsonSchemaRefParser();
+      this.parser.bundle(urlOrObject, {http: {withCredentials: false}})
       .then(schema => {
-          this._url = url;
-          this._schema = schema;
+        if (typeof urlOrObject === 'string') {
+          this._url = urlOrObject;
+        }
+        this._schema = schema;
+        try {
           this.init();
-          return resolve(this._schema);
+          resolve(this._schema);
+          this.spec.next(this._schema);
+        } catch(err) {
+          reject(err);
+        }
       }, err => reject(err));
     });
 
@@ -56,8 +68,8 @@ export class SpecManager {
     }
 
     let host = this._schema.host || urlParts.host;
-    let basePath = this._schema.basePath || '/';
-    this.apiUrl = protocol + '://' + host + basePath;
+    this.basePath = this._schema.basePath || '/';
+    this.apiUrl = protocol + '://' + host + this.basePath;
     if (this.apiUrl.endsWith('/')) {
       this.apiUrl = this.apiUrl.substr(0, this.apiUrl.length - 1);
     }
@@ -66,29 +78,37 @@ export class SpecManager {
   }
 
   preprocess() {
-    this._schema.info['x-redoc-html-description'] = renderMd( this._schema.info.description, {
-      open: (tokens, idx) => {
-        let content = tokens[idx + 1].content;
-        safePush(this._schema.info, 'x-redoc-markdown-headers', content);
-        content = slugify(content);
-        return `<h${tokens[idx].hLevel} section="section/${content}">` +
-          `<a class="share-link" href="#section/${content}"></a>`;
-      },
-      close: (tokens, idx) => {
-        return `</h${tokens[idx].hLevel}>`;
-      }
-      });
+    let mdRender = new MdRenderer();
+    if (!this._schema.info.description) this._schema.info.description = '';
+    if (this._schema.securityDefinitions) {
+      let SecurityDefinitions =  require('../components/').SecurityDefinitions;
+      mdRender.addPreprocessor(SecurityDefinitions.insertTagIntoDescription);
+    }
+    this._schema.info['x-redoc-html-description'] = mdRender.renderMd(this._schema.info.description);
+    this._schema.info['x-redoc-markdown-headers'] = mdRender.firstLevelHeadings;
   }
 
   get schema() {
     return this._schema;
   }
 
+  set schema(val:any) {
+    this._schema = val;
+    this.spec.next(this._schema);
+  }
+
   byPointer(pointer) {
     let res = null;
+    if (pointer == undefined) return null;
     try {
       res = JsonPointer.get(this._schema, decodeURIComponent(pointer));
-    } catch(e)  {/*skip*/ }
+    } catch(e)  {
+      // if resolved from outer files simple jsonpointer.get fails to get correct schema
+      if (pointer.charAt(0) !== '#') pointer = '#' + pointer;
+      try {
+        res = this.parser.$refs.get(decodeURIComponent(pointer));
+      } catch(e) { /* skip */ }
+    }
     return res;
   }
 
@@ -144,6 +164,9 @@ export class SpecManager {
         description: tag.description,
         'x-traitTag': tag['x-traitTag'] || false
       };
+      if (tag['x-traitTag']) {
+        console.warn(`x-traitTag (${tag.name}) is deprecated since v1.5.0 and will be removed in the future`);
+      }
     }
 
     return tagsMap;

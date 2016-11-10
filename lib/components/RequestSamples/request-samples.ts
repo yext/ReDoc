@@ -1,12 +1,14 @@
 'use strict';
 
-import { Component, ViewChildren, QueryList, EventEmitter, Input,
- ChangeDetectionStrategy, OnInit, HostBinding } from '@angular/core';
+import { Component, ViewChildren, QueryList, Input,
+ ChangeDetectionStrategy, OnInit, HostBinding, ElementRef, NgZone } from '@angular/core';
+
+import { Subject } from 'rxjs/Subject';
 
 import { BaseComponent, SpecManager } from '../base';
 import JsonPointer from '../../utils/JsonPointer';
 import { Tabs } from '../../shared/components/index';
-import { RedocEventsService } from '../../services/index';
+import { AppStateService, ScrollService } from '../../services/index';
 
 @Component({
   selector: 'request-samples',
@@ -21,18 +23,29 @@ export class RequestSamples extends BaseComponent implements OnInit {
   @HostBinding('attr.hidden') hidden;
 
   childTabs: Tabs;
-  selectedLang: EventEmitter<any>;
+  selectedLang: Subject<any>;
   samples: Array<any>;
 
-  constructor(specMgr:SpecManager, public events:RedocEventsService) {
+  constructor(
+    specMgr:SpecManager,
+    public appState:AppStateService,
+    private scrollService: ScrollService,
+    private el: ElementRef,
+    private zone: NgZone
+  ) {
     super(specMgr);
 
-    this.selectedLang = this.events.samplesLanguageChanged;
+    this.selectedLang = this.appState.samplesLanguage;
   }
 
-
   changeLangNotify(lang) {
-    this.events.samplesLanguageChanged.next(lang);
+    let relativeScrollPos = this.scrollService.relativeScrollPos(this.el.nativeElement);
+    this.selectedLang.next(lang);
+    // do scroll in the end of VM turn to have it seamless
+    let subscription = this.zone.onMicrotaskEmpty.subscribe(() => {
+      this.scrollService.scrollTo(this.el.nativeElement, relativeScrollPos);
+      subscription.unsubscribe();
+    });
   }
 
   init() {

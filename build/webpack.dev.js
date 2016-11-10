@@ -1,5 +1,6 @@
 const webpack = require('webpack');
 const ForkCheckerPlugin = require('awesome-typescript-loader').ForkCheckerPlugin;
+const StringReplacePlugin = require("string-replace-webpack-plugin");
 
 const root = require('./helpers').root;
 const VERSION = JSON.stringify(require('../package.json').version);
@@ -7,8 +8,7 @@ const IS_PRODUCTION = process.env.NODE_ENV === "production";
 // TODO Refactor common parts of config
 
 module.exports = {
-  context: root(),
-  devtool: 'source-map',
+  devtool: '#inline-source-map',
 
   resolve: {
     extensions: ['.ts', '.js', '.json', '.css'],
@@ -18,7 +18,7 @@ module.exports = {
     }
   },
   externals: {
-    "jquery": "jQuery",
+    'jquery': 'jquery',
     'esprima': 'esprima' // optional dep of ys-yaml not needed for redoc
   },
   node: {
@@ -50,7 +50,9 @@ module.exports = {
     path: root('dist'),
     filename: '[name].js',
     sourceMapFilename: '[name].[id].map',
-    chunkFilename: '[id].chunk.js'
+    chunkFilename: '[id].chunk.js',
+    // devtoolModuleFilenameTemplate: "[resource-path]",
+    // devtoolFallbackModuleFilenameTemplate: "[resource-path]?[hash]",
   },
 
   module: {
@@ -63,6 +65,28 @@ module.exports = {
         /node_modules/
       ]
     }, {
+      enforce: 'pre',
+      test: /\.ts$/,
+      exclude: [
+        /node_modules/
+      ],
+      loader: StringReplacePlugin.replace({
+        replacements: [
+          {
+            pattern: /styleUrls:\s*\[\s*'([\w\.\/-]*)\.css'\s*\][\s,]*$/m,
+            replacement: function (match, p1, offset, string) {
+              return `styleUrls: ['${p1}.scss'],`;
+            }
+          },
+          {
+            pattern: /(\.\/components\/Redoc\/redoc-initial-styles\.css)/m,
+            replacement: function (match, p1, offset, string) {
+              return p1.replace('.css', '.scss');
+            }
+          }
+        ]
+      })
+    }, {
       test: /\.ts$/,
       loaders: [
         'awesome-typescript-loader',
@@ -70,13 +94,16 @@ module.exports = {
       ],
       exclude: [/\.(spec|e2e)\.ts$/]
     }, {
-      test: /lib[\\\/].*\.css$/,
-      loaders: ['raw-loader'],
-      exclude: [/redoc-initial-styles\.css$/]
+      test: /lib[\\\/].*\.scss$/,
+      loaders: ['raw-loader', "sass"],
+      exclude: [/redoc-initial-styles\.scss$/]
+    }, {
+      test: /\.scss$/,
+      loaders: ['style', 'css?-import', "sass"],
+      exclude: [/lib[\\\/](?!.*redoc-initial-styles).*\.scss$/]
     }, {
       test: /\.css$/,
       loaders: ['style', 'css?-import'],
-      exclude: [/lib[\\\/](?!.*redoc-initial-styles).*\.css$/]
     }, {
       test: /\.html$/,
       loader: 'raw-loader'
@@ -97,6 +124,8 @@ module.exports = {
       'AOT': IS_PRODUCTION
     }),
 
-    new ForkCheckerPlugin()
+    new ForkCheckerPlugin(),
+
+    new StringReplacePlugin()
   ],
 }

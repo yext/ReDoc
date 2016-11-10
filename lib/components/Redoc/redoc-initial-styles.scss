@@ -22,12 +22,15 @@
 redoc.loading {
   position: relative;
   display: block;
-  min-height:350px;
+  min-height: 350px;
 }
 
 @keyframes rotate {
-  0% {transform: rotate(0deg)}
-  100% {transform: rotate(360deg)}
+  0% {
+    transform: rotate(0deg); }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 redoc.loading:before {
@@ -68,21 +71,4 @@ redoc.loading:after {
 
 redoc.loading-remove:before, redoc.loading-remove:after {
   opacity: 0;
-}
-
-.redoc-error {
-  padding: 20px;
-  text-align: center;
-  color: #cc0000;
-
-  > h2 {
-    color: #cc0000;
-    font-size: 40px;
-  }
-}
-
-.redoc-error-details {
-  max-width: 750px;
-  margin: 0 auto;
-  font-size: 18px;
 }
