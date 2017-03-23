@@ -22,7 +22,6 @@ header.paramType {
 .params-wrap {
   display: table;
   width: 100%;
-  table-layout: fixed;
 }
 
 .param-name {
@@ -37,7 +36,6 @@ header.paramType {
 
 .param {
   display: table-row;
-  word-wrap: break-word;
 }
 
 .param:last-of-type > .param-name {

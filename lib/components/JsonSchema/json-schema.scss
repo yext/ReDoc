@@ -113,6 +113,14 @@ table {
   border-spacing: 0;
 }
 
+table.params-wrap {
+  table-layout: fixed;
+}
+
+tr.param {
+  word-wrap: break-word;
+}
+
 .params-wrap.params-array:before, .params-wrap.params-array:after {
   display: block;
   font-weight: $base-font-weight;
