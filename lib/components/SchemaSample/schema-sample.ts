@@ -3,9 +3,10 @@
 import { Component, ElementRef, Input, ChangeDetectionStrategy, OnInit } from '@angular/core';
 
 import * as OpenAPISampler from 'openapi-sampler';
-
+import JsonPointer from '../../utils/JsonPointer';
 import { BaseComponent, SpecManager } from '../base';
 import { SchemaNormalizer } from '../../services/schema-normalizer.service';
+import { getJsonLikeSample, getXmlLikeSample, getTextLikeSample } from '../../utils/helpers';
 
 @Component({
   selector: 'schema-sample',
@@ -19,6 +20,8 @@ export class SchemaSample extends BaseComponent implements OnInit {
 
   element: any;
   sample: any;
+  xmlSample: string;
+  textSample: string;
   enableButtons: boolean = false;
 
   private _normalizer:SchemaNormalizer;
@@ -32,8 +35,8 @@ export class SchemaSample extends BaseComponent implements OnInit {
   init() {
     this.bindEvents();
 
-    let base:any = {};
-    let sample;
+    let base:any = this.componentSchema;
+    let sample, xmlSample;
 
     // got pointer not directly to the schema but e.g. to the response obj
     if (this.componentSchema.schema) {
@@ -42,8 +45,19 @@ export class SchemaSample extends BaseComponent implements OnInit {
       this.pointer += '/schema';
     }
 
-    if (base.examples && base.examples['application/json']) {
-      sample = base.examples['application/json'];
+    // Support x-examples, allowing requests to specify an example.
+    let examplePointer:string = JsonPointer.join(JsonPointer.dirName(this.pointer), 'x-examples');
+    let requestExamples:any = this.specMgr.byPointer(examplePointer);
+    if (requestExamples) {
+      base.examples = requestExamples;
+    }
+
+    this.xmlSample = base.examples && getXmlLikeSample(base.examples);
+    this.textSample = base.examples && getTextLikeSample(base.examples);
+
+    let jsonLikeSample = base.examples && getJsonLikeSample(base.examples);
+    if (jsonLikeSample) {
+      sample = jsonLikeSample;
     } else {
       let selectedDescendant;
 
@@ -51,11 +65,11 @@ export class SchemaSample extends BaseComponent implements OnInit {
 
       let discriminator = this.componentSchema.discriminator || this.componentSchema['x-discriminatorBasePointer'];
       if (discriminator) {
-        let descendants = this.specMgr.findDerivedDefinitions(this.componentSchema._pointer || this.pointer);
+        let descendants = this.specMgr.findDerivedDefinitions(this.componentSchema._pointer || this.pointer, this.componentSchema);
         if (descendants.length) {
           // TODO: sync up with dropdown
           selectedDescendant = descendants[0];
-          let descSchema = this.specMgr.byPointer(selectedDescendant.$ref);
+          let descSchema = this.specMgr.getDescendant(selectedDescendant, this.componentSchema);
           this.componentSchema  = this._normalizer.normalize(Object.assign({}, descSchema), selectedDescendant.$ref,
             {omitParent: false});
         }
@@ -98,7 +112,7 @@ export class SchemaSample extends BaseComponent implements OnInit {
     if (this.skipReadOnly && this.componentSchema['x-redoc-ro-sample']) {
       this.sample = this.componentSchema['x-redoc-ro-sample'];
       return true;
-    } else if (this.componentSchema['x-redoc-rw-sample']) {
+    } else if (!this.skipReadOnly && this.componentSchema['x-redoc-rw-sample']) {
       this.sample = this.componentSchema['x-redoc-rw-sample'];
       return true;
     }

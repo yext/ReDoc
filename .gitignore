@@ -26,11 +26,15 @@ lib/**/*.css
 # files produced by ngc
 lib/**/*.ngfactory.ts
 lib/**/*.css.shim.ts
+**/*.ngsummary.json
+lib/**/*.shim.ngstyle.ts
 
 # other
 /dist
 /demo/build
 .tmp
+compiled
 /coverage
 .ghpages-tmp
 stats.json
+/package-lock.json

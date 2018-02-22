@@ -10,25 +10,30 @@ import {
 import { getChildDebugElement } from '../../../tests/helpers';
 
 
-import { MethodsList } from './methods-list';
+import { OperationsList } from './operations-list';
 import { SpecManager } from '../../utils/spec-manager';
 
 describe('Redoc components', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ declarations: [ TestAppComponent ] });
   });
-  describe('MethodsList Component', () => {
+  describe('OperationsList Component', () => {
     let builder;
     let component;
     let fixture;
+    let specMgr;
 
-    beforeEach(async(inject([SpecManager], ( specMgr) => {
-
-      return specMgr.load('/tests/schemas/methods-list-component.json');
+    beforeEach(async(inject([SpecManager], (_specMgr) => {
+      specMgr = _specMgr;
     })));
+
+    beforeEach(done => {
+      specMgr.load('/tests/schemas/operations-list-component.json').then(done, done.fail);
+    });
+
     beforeEach(() => {
       fixture = TestBed.createComponent(TestAppComponent);
-      component = getChildDebugElement(fixture.debugElement, 'methods-list').componentInstance;
+      component = getChildDebugElement(fixture.debugElement, 'operations-list').componentInstance;
       fixture.detectChanges();
     });
 
@@ -37,13 +42,13 @@ describe('Redoc components', () => {
       expect(component).not.toBeNull();
     });
 
-    it('should get correct tags list', () => {
+    it('should build correct tags list', () => {
       expect(component.tags).not.toBeNull();
       component.tags.should.have.lengthOf(2);
       component.tags[0].name.should.be.equal('traitTag');
-      component.tags[0].methods.should.be.empty();
+      should.not.exist(component.tags[0].items);
       component.tags[1].name.should.be.equal('tag1');
-      component.tags[1].methods.should.have.lengthOf(2);
+      component.tags[1].items.should.have.lengthOf(2);
     });
   });
 });
@@ -51,7 +56,7 @@ describe('Redoc components', () => {
 @Component({
   selector: 'test-app',
   template:
-      `<methods-list></methods-list>`
+      `<operations-list></operations-list>`
 })
 class TestAppComponent {
 }

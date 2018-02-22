@@ -11,32 +11,17 @@ const BANNER =
 
 const IS_MODULE = process.env.IS_MODULE != null;
 
-const config = {
-  context: root(),
+const webpackMerge = require('webpack-merge'); // used to merge webpack configs
+const commonConfig = require('./webpack.common.js');
+
+const config = webpackMerge(commonConfig({
+  IS_PRODUCTION: true,
+  AOT: true
+}), {
   devtool: 'source-map',
 
-  resolve: {
-    extensions: ['.ts', '.js', '.json', '.css'],
-    alias: {
-      http: 'stream-http',
-      https: 'stream-http'
-    }
-  },
-  externals: {
-    'jquery': 'jquery',
-    'esprima': 'esprima' // optional dep of ys-yaml not needed for redoc
-  },
-  node: {
-    fs: "empty",
-    crypto: "empty",
-    global: true,
-    process: true,
-    module: false,
-    clearImmediate: false,
-    setImmediate: false
-  },
   entry: {
-    'redoc': IS_MODULE ? ['./lib/vendor.ts', './lib/redoc.module.ts'] : ['./lib/polyfills.ts', './lib/vendor.ts', './lib/index.ts']
+    'redoc': IS_MODULE ? ['./lib/redoc.module.ts'] : ['./lib/polyfills.ts', './lib/index.ts']
   },
 
   output: {
@@ -47,34 +32,18 @@ const config = {
     libraryTarget: 'umd',
     umdNamedDefine: true
   },
-
   module: {
-    exprContextCritical: false,
-    rules: [{
-      enforce: 'pre',
-      test: /\.js$/,
-      loader: 'source-map-loader',
-      exclude: [
-        /node_modules/
-      ]
-    }, {
-      test: /node_modules\/.*\.ngfactory\.ts$/,
-      loader: 'awesome-typescript-loader'
-    }, {
-      test: /\.ts$/,
-      loader: 'awesome-typescript-loader',
-      exclude: /(node_modules)/,
-    }, {
-      test: /lib[\\\/].*\.css$/,
-      loaders: ['raw-loader'],
-      exclude: [/redoc-initial-styles\.css$/]
-    }, {
-      test: /\.css$/,
-      loaders: ['style', 'css?-import'],
-      exclude: [/lib[\\\/](?!.*redoc-initial-styles).*\.css$/]
-    }]
+    rules: [
+      {
+        test: /\.ts$/,
+        use: [
+          'awesome-typescript-loader',
+          'angular2-template-loader',
+        ],
+        exclude: [/\.(spec|e2e)\.ts$/]
+      }
+    ]
   },
-
   plugins: [
     new webpack.LoaderOptionsPlugin({
       minimize: true,
@@ -91,14 +60,10 @@ const config = {
       },
       sourceMap: true
     }),
-    new webpack.BannerPlugin(BANNER),
-    new webpack.DefinePlugin({
-      'IS_PRODUCTION': true,
-      'LIB_VERSION': VERSION,
-      'AOT': true
-    })
-  ],
-}
+    new webpack.optimize.ModuleConcatenationPlugin(),
+    new webpack.BannerPlugin(BANNER)
+  ]
+})
 
 if (IS_MODULE) {
   config.externals = {
@@ -113,17 +78,6 @@ if (IS_MODULE) {
     'rxjs': 'rxjs',
     'zone.js/dist/zone': 'zone.js/dist/zone'
   };
-
-  config.module.rules.push({
-    test: /\.ts$/,
-    loader: 'angular2-template-loader',
-    exclude: [/\.(spec|e2e)\.ts$/]
-  });
-
-  config.module.rules.push({
-    test: /\.html$/,
-    loader: 'raw-loader'
-  });
 }
 
 module.exports = config;

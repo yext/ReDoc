@@ -1,36 +1,48 @@
 'use strict';
 
-import { Component, ElementRef, ChangeDetectorRef, OnInit } from '@angular/core';
+import { Component,
+  EventEmitter,
+  Input,
+  Output,
+  ElementRef,
+  ChangeDetectorRef,
+  ViewChild,
+  OnInit,
+  OnDestroy
+} from '@angular/core';
 
-//import { global } from '@angular/core/src/facade/lang';
 import { trigger, state, animate, transition, style } from '@angular/core';
-import { BaseComponent, SpecManager } from '../base';
-import { ScrollService, Hash, MenuService, OptionsService } from '../../services/index';
+import { ScrollService, MenuService, OptionsService, MenuItem } from '../../services/';
+import { PerfectScrollbar } from '../../shared/components';
 import { BrowserDomAdapter as DOM } from '../../utils/browser-adapter';
-import { MenuCategory } from '../../services/schema-helper.service';
 
 const global = window;
 
 @Component({
+  selector: 'side-menu-items',
+  templateUrl: './side-menu-items.html',
+  styleUrls: ['./side-menu-items.css'],
+})
+export class SideMenuItems {
+  @Input() items: MenuItem[];
+  @Output() activate = new EventEmitter<MenuItem>();
+
+  activateItem(item) {
+    this.activate.next(item);
+  }
+}
+
+@Component({
   selector: 'side-menu',
   templateUrl: './side-menu.html',
-  styleUrls: ['./side-menu.css'],
-  animations: [
-    trigger('itemAnimation', [
-      state('collapsed, void',
-        style({ height: '0px' })),
-      state('expanded',
-        style({ height: '*' })),
-      transition('collapsed <=> expanded', [
-        animate('200ms ease')
-      ])
-    ])
-  ],
+  styleUrls: ['./side-menu.css']
 })
-export class SideMenu extends BaseComponent implements OnInit {
+export class SideMenu implements OnInit, OnDestroy {
   activeCatCaption: string;
   activeItemCaption: string;
-  categories: Array<MenuCategory>;
+  menuItems: Array<MenuItem>;
+  @Input() itemsTemplate;
+  @ViewChild(PerfectScrollbar) PS:PerfectScrollbar;
 
   private options: any;
   private $element: any;
@@ -38,10 +50,16 @@ export class SideMenu extends BaseComponent implements OnInit {
   private $resourcesNav: any;
   private $scrollParent: any;
 
-  constructor(specMgr:SpecManager, elementRef:ElementRef,
-  private scrollService:ScrollService, private menuService:MenuService, private hash:Hash,
-  optionsService:OptionsService, private detectorRef:ChangeDetectorRef) {
-    super(specMgr);
+  private changedActiveSubscription;
+  private changedSubscription;
+
+  constructor(
+    elementRef:ElementRef,
+    private scrollService:ScrollService,
+    private menuService:MenuService,
+    optionsService:OptionsService,
+    private detectorRef:ChangeDetectorRef,
+  ) {
     this.$element = elementRef.nativeElement;
 
     this.activeCatCaption = '';
@@ -49,28 +67,52 @@ export class SideMenu extends BaseComponent implements OnInit {
 
     this.options = optionsService.options;
 
-    this.menuService.changed.subscribe((evt) => this.changed(evt));
+    this.changedActiveSubscription = this.menuService.changedActiveItem.subscribe((evt) => this.changed(evt));
+    this.changedSubscription = this.menuService.changed.subscribe((evt) => {
+      this.update();
+    });
   }
 
-  changed({cat, item}) {
-    this.activeCatCaption = cat.name || '';
-    this.activeItemCaption = item && item.summary || '';
+  changed(item) {
+    if (!item) {
+      this.activeCatCaption = '';
+      this.activeItemCaption = '';
+      return;
+    }
+    if (item.parent) {
+      this.activeItemCaption = item.name;
+      this.activeCatCaption =  item.parent.name;
+    } else {
+      this.activeCatCaption = item.name;
+      this.activeItemCaption = '';
+    }
 
-    //safari doesn't update bindings if not run changeDetector manually :(
+    // safari doesn't update bindings if not run changeDetector manually :(
+    this.update();
+    this.scrollActiveIntoView();
+  }
 
+  update() {
     this.detectorRef.detectChanges();
+    this.PS && this.PS.update();
   }
 
-  activateAndScroll(idx, methodIdx) {
-    if (this.mobileMode()) {
+  scrollActiveIntoView() {
+    let $item = this.$element.querySelector('li.active, label.active');
+    if ($item) $item.scrollIntoViewIfNeeded();
+  }
+
+  activateAndScroll(item) {
+    if (this.mobileMode) {
       this.toggleMobileNav();
     }
-    this.menuService.activate(idx, methodIdx);
+
+    this.menuService.activate(item);
     this.menuService.scrollToActive();
   }
 
   init() {
-    this.categories = this.menuService.categories;
+    this.menuItems = this.menuService.items;
 
     this.$mobileNav = DOM.querySelector(this.$element, '.mobile-nav');
     this.$resourcesNav = DOM.querySelector(this.$element, '#resources-nav');
@@ -82,7 +124,7 @@ export class SideMenu extends BaseComponent implements OnInit {
     };
   }
 
-  mobileMode() {
+  get mobileMode() {
     return this.$mobileNav.clientHeight > 0;
   }
 
@@ -102,10 +144,20 @@ export class SideMenu extends BaseComponent implements OnInit {
   }
 
   destroy() {
+    this.changedActiveSubscription.unsubscribe();
+    this.changedSubscription.unsubscribe();
     this.scrollService.unbind();
+    this.menuService.destroy();
+  }
+
+  ngOnDestroy() {
+    this.destroy();
   }
 
   ngOnInit() {
-    this.preinit();
+    this.init();
+  }
+
+  ngAfterViewInit() {
   }
 }

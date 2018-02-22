@@ -15,15 +15,15 @@ describe('Common components', () => {
   });
   describe('StickySidebar Component', () => {
     let builder;
-    let component;
+    let component: StickySidebar;
     let fixture;
 
-    beforeEach(inject([TestBed], (tcb) => {
+    beforeEach(() => {
 
       fixture = TestBed.createComponent(TestApp);
       let debugEl = getChildDebugElementByType(fixture.debugElement, StickySidebar);
       component = debugEl.injector.get(StickySidebar);
-    }));
+    });
 
 
     it('should init component', () => {
@@ -31,6 +31,7 @@ describe('Common components', () => {
     });
 
     it('should start unsticked', () => {
+      component.disable = true;
       spyOn(component, 'stick').and.callThrough();
       spyOn(component, 'stickBottom').and.callThrough();
       fixture.detectChanges();
@@ -38,11 +39,13 @@ describe('Common components', () => {
       expect(component.stickBottom).not.toHaveBeenCalled();
     });
 
-    it('should stick to the top on the next VM tick', (done) => {
+    it('should stick to the top on the next animation frame', (done) => {
       spyOn(component, 'stick').and.callThrough();
       spyOn(component, 'stickBottom').and.callThrough();
+      component.disable = true;
       fixture.detectChanges();
-      setTimeout(() => {
+      component.disable = false;
+      requestAnimationFrame(() => {
         expect(component.stick).toHaveBeenCalled();
         expect(component.stickBottom).toHaveBeenCalled();
         done();

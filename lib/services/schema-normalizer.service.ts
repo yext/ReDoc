@@ -5,30 +5,30 @@ import { JsonPointer } from '../utils/JsonPointer';
 import { defaults } from '../utils/helpers';
 import { WarningsService } from './warnings.service';
 
-interface Reference {
+export interface Reference {
   $ref: string;
   description: string;
 }
 
-interface Schema {
+export interface Schema {
   properties: any;
   allOf: any;
   items: any;
   additionalProperties: any;
 }
 
-@Injectable()
 export class SchemaNormalizer {
   _dereferencer:SchemaDereferencer;
-  constructor(private _schema:any) {
+  constructor(_schema:any) {
     this._dereferencer = new SchemaDereferencer(_schema, this);
   }
   normalize(schema, ptr, opts:any ={}) {
     let hasPtr = !!schema.$ref;
     if (opts.resolved && !hasPtr) this._dereferencer.visit(ptr);
 
+    if (opts.childFor) this._dereferencer.visit(opts.childFor);
     if (schema['x-redoc-normalized']) return schema;
-      let res = SchemaWalker.walk(schema, ptr, (subSchema, ptr) => {
+    let res = SchemaWalker.walk(schema, ptr, (subSchema, ptr) => {
       let resolved = this._dereferencer.dereference(subSchema, ptr);
       if (resolved.allOf) {
         resolved._pointer = resolved._pointer || ptr;
@@ -38,6 +38,7 @@ export class SchemaNormalizer {
       return resolved;
     });
     if (opts.resolved && !hasPtr) this._dereferencer.exit(ptr);
+    if (opts.childFor) this._dereferencer.exit(opts.childFor);
     res['x-redoc-normalized'] = true;
     return res;
   }
@@ -94,9 +95,10 @@ class SchemaWalker {
   }
 }
 
-class AllOfMerger {
+export class AllOfMerger {
   static merge(into, schemas) {
     into['x-derived-from'] = [];
+    let hadDiscriminator = !!into.discriminator;
     for (let i=0; i < schemas.length; i++) {
       let subSchema = schemas[i];
       into['x-derived-from'].push(subSchema._pointer);
@@ -113,7 +115,8 @@ class AllOfMerger {
       defaults(into, subSchema);
       subSchema._pointer = tmpPtr;
     }
-    into.allOf = null;
+    if (!hadDiscriminator) into.discriminator = null;
+    delete into.allOf;
   }
 
   private static mergeObject(into, subSchema, allOfNumber) {
@@ -177,7 +180,7 @@ class RefCounter {
 }
 
 
-class SchemaDereferencer {
+export class SchemaDereferencer {
   private _refCouner = new RefCounter();
 
   constructor(private _spec: SpecManager, private normalizator: SchemaNormalizer) {
@@ -196,7 +199,6 @@ class SchemaDereferencer {
 
   dereference(schema: Reference, pointer:string):any {
     if (!schema || !schema.$ref) return schema;
-    window['derefCount'] = window['derefCount'] ? window['derefCount'] + 1 : 1;
     let $ref = schema.$ref;
     let resolved = this._spec.byPointer($ref);
     if (!this._refCouner.visited($ref)) {
@@ -212,7 +214,8 @@ class SchemaDereferencer {
     // if resolved schema doesn't have title use name from ref
     resolved.title = resolved.title || JsonPointer.baseName($ref);
 
-    let keysCount = Object.keys(schema).length;
+    let keysCount = Object.keys(schema).filter(key => !key.startsWith('x-redoc')).length;
+
     if ( keysCount > 2 || (keysCount === 2 && !schema.description) ) {
       WarningsService.warn(`Other properties are defined at the same level as $ref at "#${pointer}". ` +
         'They are IGNORED according to the JsonSchema spec');

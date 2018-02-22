@@ -27,6 +27,10 @@ $sub-schema-offset: ($bullet-size / 2) + $bullet-margin;
   width: 75%;
 
   box-sizing: border-box;
+
+  > div {
+    line-height: 1;
+  }
 }
 
 .param-range {
@@ -41,7 +45,7 @@ $sub-schema-offset: ($bullet-size / 2) + $bullet-margin;
 }
 
 .param-description {
-  font-size: 13px;
+  //font-size: 14px;
 }
 
 .param-required {
@@ -60,23 +64,30 @@ $sub-schema-offset: ($bullet-size / 2) + $bullet-margin;
   font-weight: bold;
 }
 
-.param-type {
+.param-type,
+.param-array-format {
   vertical-align: middle;
   line-height: $param-name-height;
   color: rgba($black, 0.4);
   font-size: 0.929em;
+}
+.param-type {
   font-weight: normal;
+  word-break: break-all;
+  &.array::before,
+  &.tuple::before {
+    color: $black;
+    font-weight: $base-font-weight;
+    .param-collection-format-multi + & {
+      content: none;
+    }
+  }
 
   &.array::before {
     content: $array-text;
-    color: $black;
-    font-weight: $base-font-weight;
   }
-
   &.tuple::before {
     content: $tuple-text;
-    color: $black;
-    font-weight: $base-font-weight;
   }
 
   &.with-hint {
@@ -135,7 +146,6 @@ $sub-schema-offset: ($bullet-size / 2) + $bullet-margin;
 }
 
 .param:first-of-type {
-
   > .param-name::before {
     content: '';
     display: block;
@@ -149,7 +159,6 @@ $sub-schema-offset: ($bullet-size / 2) + $bullet-margin;
 
 .param:last-of-type,
 .param.last {
-
   > .param-name {
     position: relative;
 
@@ -194,6 +203,19 @@ $sub-schema-offset: ($bullet-size / 2) + $bullet-margin;
   }
 }
 
+.param-enum {
+  color: $text-color;
+  font-size: 0.95em;
+
+  &::before {
+    content: 'Valid values: ';
+  }
+
+  .param-type.array ~ &::before {
+    content: 'Valid items values: ';
+  }
+}
+
 .param-pattern {
   color: $nullable-color;
   white-space: nowrap;
@@ -204,7 +226,6 @@ $sub-schema-offset: ($bullet-size / 2) + $bullet-margin;
     margin: 0 3px;
     font-size: 1.2em;
     font-weight: bold;
-    vertical-align: bottom;
   }
 }
 
@@ -216,14 +237,24 @@ $sub-schema-offset: ($bullet-size / 2) + $bullet-margin;
   }
 }
 
+.param-example {
+  font-size: 0.95em;
+
+  &::before {
+    content: 'Example: ';
+  }
+}
+
 .param-enum-value,
-.param-default-value {
-  background-color: $background-color;
-  border: 1px solid rgba($secondary-color, 0.2);
+.param-default-value,
+.param-example-value {
+  font-family: Courier, monospace;
+  background-color: rgba($secondary-color, 0.02);
+  border: 1px solid rgba($secondary-color, 0.1);
   margin: 2px 3px;
-  padding: 0 5px;
-  border-radius: 2px;
-  color: $secondary-color;
+  padding: 0.1em 0.2em 0.2em;
+  border-radius: $border-radius;
+  color: $text-color;
   display: inline-block;
   min-width: 20px;
   text-align: center;

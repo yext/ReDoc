@@ -1,9 +1,11 @@
 'use strict';
 import { SchemaNormalizer } from './schema-normalizer.service';
-import { SpecManager } from '../utils/spec-manager';;
+import { SpecManager } from '../utils/spec-manager';
+import { OptionsService } from '../services/options.service';
+
 
 describe('Spec Helper', () => {
-  let specMgr:SpecManager = new SpecManager();
+  let specMgr:SpecManager = new SpecManager(new OptionsService());
   let normalizer = new SchemaNormalizer(specMgr);
 
   describe('Dereference', () => {
@@ -150,7 +152,7 @@ describe('Spec Helper', () => {
       });
 
       it('should remove $allOf field', () => {
-        expect(joined.allOf).toBeNull();
+        expect(joined.allOf).toBeUndefined();
       });
 
       it('should set type object', () => {
@@ -176,7 +178,7 @@ describe('Spec Helper', () => {
       });
 
       it('should remove $allOf field', () => {
-        expect(joined.allOf).toBeNull();
+        expect(joined.allOf).toBeUndefined();
       });
 
       it('should set type object', () => {
@@ -202,7 +204,7 @@ describe('Spec Helper', () => {
       });
 
       it('should remove $allOf field', () => {
-        expect(joined.allOf).toBeNull();
+        expect(joined.allOf).toBeUndefined();
       });
 
       it('should set type object', () => {

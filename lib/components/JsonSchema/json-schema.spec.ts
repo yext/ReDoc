@@ -8,8 +8,6 @@ import {
 
 import { getChildDebugElement } from '../../../tests/helpers';
 
-
-import { JsonSchema } from './json-schema';
 import { SpecManager } from '../../utils/spec-manager';;
 
 describe('Redoc components', () => {
@@ -59,10 +57,9 @@ describe('Redoc components', () => {
 });
 
 
-/** Test component that contains a Method. */
+/** Test component that contains a json schema. */
 @Component({
   selector: 'test-app',
-  providers: [SpecManager],
   template:
       `<json-schema></json-schema>`
 })

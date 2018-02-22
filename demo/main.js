@@ -7,7 +7,8 @@
   var url = window.location.search.match(/url=([^&]+)/);
   if (url && url.length > 1) {
     url = decodeURIComponent(url[1]);
-    document.getElementsByTagName('redoc')[0].setAttribute('spec-url', url);
+    url = window.__REDOC_DEV__ ? url : '\\\\cors.apis.guru/' + url;
+    document.getElementsByTagName('redoc')[0].setAttribute('spec-url',  url);
   }
 
   function updateQueryStringParameter(uri, key, value) {
@@ -50,10 +51,10 @@
 
     var $specInput = document.getElementById('spec-input');
 
-    // $specInput.addEventListener('value-changed', function(e) {
-    //   schemaUrlInput.value = e.detail.value;
-    //   location.search = updateQueryStringParameter(location.search, 'url', schemaUrlInput.value);
-    // });
+    $specInput.addEventListener('value-changed', function(e) {
+      schemaUrlInput.value = e.detail.value;
+      location.search = updateQueryStringParameter(location.search, 'url', schemaUrlInput.value);
+    });
 
     function selectItem() {
       let value = this.innerText.trim();

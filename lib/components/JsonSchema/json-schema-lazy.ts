@@ -1,6 +1,6 @@
 'use strict';
 
-import { Component, ElementRef, ViewContainerRef, OnDestroy, Input,
+import { Component, ElementRef, ViewContainerRef, OnDestroy, OnInit, Input,
   AfterViewInit, ComponentFactoryResolver, Renderer } from '@angular/core';
 
 import { JsonSchema } from './json-schema';
@@ -12,10 +12,12 @@ var cache = {};
 @Component({
   selector: 'json-schema-lazy',
   entryComponents: [ JsonSchema ],
-  template: ''
+  template: '',
+  styles: [':host { display:none }']
 })
-export class JsonSchemaLazy implements OnDestroy, AfterViewInit {
+export class JsonSchemaLazy implements OnDestroy, OnInit, AfterViewInit {
   @Input() pointer: string;
+  @Input() absolutePointer: string;
   @Input() auto: boolean;
   @Input() isRequestSchema: boolean;
   @Input() final: boolean = false;
@@ -34,7 +36,7 @@ export class JsonSchemaLazy implements OnDestroy, AfterViewInit {
     return schema && schema.$ref || this.pointer;
   }
 
-  _loadAfterSelf() {
+  private _loadAfterSelf() {
     var componentFactory = this.resolver.resolveComponentFactory(JsonSchema);
     let contextInjector = this.location.parentInjector;
     let compRef = this.location.createComponent(componentFactory, null, contextInjector, null);
@@ -62,7 +64,8 @@ export class JsonSchemaLazy implements OnDestroy, AfterViewInit {
 
       // skip caching view with descendant schemas
       // as it needs attached controller
-      if (!this.disableLazy && (compRef.instance.hasDescendants || compRef.instance._hasSubSchemas)) {
+      let hasDescendants = compRef.instance.descendants && compRef.instance.descendants.length;
+      if (!this.disableLazy && (hasDescendants || compRef.instance._hasSubSchemas)) {
         this._loadAfterSelf();
         return;
       }
@@ -75,6 +78,10 @@ export class JsonSchemaLazy implements OnDestroy, AfterViewInit {
 
   projectComponentInputs(instance:JsonSchema) {
     Object.assign(instance, this);
+  }
+
+  ngOnInit() {
+    if (!this.absolutePointer) this.absolutePointer = this.pointer;
   }
 
   ngAfterViewInit() {

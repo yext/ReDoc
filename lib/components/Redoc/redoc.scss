@@ -4,11 +4,11 @@
   display: block;
   box-sizing: border-box;
 
-  -webkit-tap-highlight-color: rgba(0,0,0,0);
-  -moz-tap-highlight-color: rgba(0,0,0,0);
-  -ms-tap-highlight-color: rgba(0,0,0,0);
-  -o-tap-highlight-color: rgba(0,0,0,0);
-  tap-highlight-color: rgba(0,0,0,0);
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  -moz-tap-highlight-color: rgba(0, 0, 0, 0);
+  -ms-tap-highlight-color: rgba(0, 0, 0, 0);
+  -o-tap-highlight-color: rgba(0, 0, 0, 0);
+  tap-highlight-color: rgba(0, 0, 0, 0);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-smoothing: antialiased;
@@ -18,10 +18,10 @@
   -webkit-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  -webkit-text-shadow: 1px 1px 1px rgba(0,0,0,0.004);
-  -ms-text-shadow: 1px 1px 1px rgba(0,0,0,0.004);
-  text-shadow: 1px 1px 1px rgba(0,0,0,0.004);
-  text-rendering: optimizeSpeed!important;
+  -webkit-text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.004);
+  -ms-text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.004);
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.004);
+  text-rendering: optimizeSpeed !important;
   font-smooth: always;
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
@@ -29,21 +29,33 @@
 }
 
 .redoc-wrap {
+  z-index: 0;
   position: relative;
+  overflow: hidden;
   font-family: $base-font, $base-font-family;
   font-size: $em-size;
   line-height: $base-line-height;
   color: $text-color;
 }
 
+.menu-content {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+side-menu {
+  overflow: hidden;
+}
+
 [sticky-sidebar] {
   width: $side-bar-width;
   background-color: $side-bar-bg-color;
-  overflow-y: auto;
   overflow-x: hidden;
+  transform: translateZ(0);
+  z-index: 75;
 
   @media (max-width: $side-menu-mobile-breakpoint) {
-    z-index: 1;
     width: 100%;
     bottom: auto !important;
   }
@@ -51,28 +63,38 @@
 
 .api-content {
   margin-left: $side-bar-width;
+  z-index: 50;
   position: relative;
+  // height: 100vh;
+  // overflow: scroll;
+  top: 0;
   @media (max-width: $side-menu-mobile-breakpoint) {
     padding-top: 3em;
     margin-left: 0;
   }
 }
 
-.api-content:before {
-  content: "";
-  background: $samples-panel-bg-color;
-  height: 100%;
-  width: $samples-panel-width;
-  top: 0;
-  right: 0;
+.background {
   position: absolute;
-  z-index: -1;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: $side-bar-width;
+  z-index: 1;
+
+  &-actual {
+    background: $samples-panel-bg-color;
+    left: 100% - $samples-panel-width;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    position: absolute;
+  }
 
   @media (max-width: $right-panel-squash-breakpoint) {
     display: none;
   }
 }
-
 
 .redoc-error {
   padding: 20px;
@@ -90,24 +112,109 @@
   font-size: 18px;
 }
 
+/* global menu items styles (search results + menu) */
+:host /deep/ {
+  .menu-item-header > span {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .menu-item-header > .operation-type + .menu-item-title {
+    width: calc(100% - 32px); // 32 = 26px image width + 6px margin left
+  }
+
+  .menu-item-header > .operation-type {
+    width: 26px;
+    display: inline-block;
+    height: 13px;
+    background-color: #333;
+    border-radius: 3px;
+    vertical-align: top;
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAACgCAMAAADZ0KclAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRF////////VXz1bAAAAAJ0Uk5T/wDltzBKAAAA80lEQVR42uSWSwLCIAxEX+5/aa2QZBJw5UIt9QMdRqSPEAAw/TyvqzZf150NzdXL49qreXwXjeqz9bqN1tgJl/KLyaVrrL7K7gx+1vlNMqy+helOO4rfBGYZiEkq1ubQ3DeKvc97Et+d+e01vIZlLZZqb1WNJFd8ZKYsmv4Hh3H2fDgjMUI5WSExjiEZs7rEZ5T+/jQn9lhgsw53j/e9MQtxqPsbZY54M5fNl/MY/f1s7NbRSkYlYjc0KPsWMrmhIU9933ywxDiSE+upYNH8TdusUotllNvcAUzfnE/NC4OSYyklQhpdl9E4Tw0Cm4/G9xBgAO7VCkjWLOMfAAAAAElFTkSuQmCC');
+    background-repeat: no-repeat;
+    background-position: 6px 4px;
+    text-indent: -9000px;
+    margin-right: 6px;
+    margin-top: 2px;
+
+    &.get {
+      background-position: 8px -12px;
+      background-color: $get-color;
+    }
+
+    &.post {
+      background-position: 6px 4px;
+      background-color: $post-color;
+    }
+
+    &.put {
+      background-position: 8px -28px;
+      background-color: $put-color;
+    }
+
+    &.options {
+      background-position: 4px -148px;
+      background-color: $options-color;
+    }
+
+    &.patch {
+      background-position: 4px -114px;
+      background-color: $patch-color;
+    }
+
+    &.delete {
+      background-position: 4px -44px;
+      background-color: $delete-color;
+    }
+
+    &.basic {
+      background-position: 5px -79px;
+      background-color: $basic-color;
+    }
+
+    &.link {
+      background-position: 4px -131px;
+      background-color: $link-color;
+    }
+
+    &.head {
+      background-position: 6px -102px;
+      background-color: $head-color;
+    }
+  }
+}
+
 /* global redoc styles */
 
 @for $index from 1 through 5 {
-  :host /deep/ h#{$index}{
+  :host /deep/ h#{$index} {
     margin-top: 0;
     font-family: $headers-font, $headers-font-family;
     color: $secondary-color;
     font-weight: $headers-font-weight;
-    line-height: 1.4em;
+    line-height: 1.5;
+    margin-bottom: 0.5em;
   }
 }
 
 :host /deep/ {
-  h1 { font-size: $h1; color: $headers-color; }
-  h2 { font-size: $h2; }
-  h3 { font-size: $h3; }
-  h4 { font-size: $h4; }
-  h5 { font-size: $h5; }
+  h1 {
+    font-size: $h1;
+    color: $headers-color;
+  }
+  h2 {
+    font-size: $h2;
+  }
+  h3 {
+    font-size: $h3;
+  }
+  h4 {
+    font-size: $h4;
+  }
+  h5 {
+    font-size: $h5;
+    line-height: 20px;
+  }
 
   p {
     font-family: $base-font, $base-font-family;
@@ -151,7 +258,6 @@ footer {
   }
 }
 
-
 /* markdown elements */
 
 :host /deep/ .redoc-markdown-block {
@@ -164,12 +270,14 @@ footer {
     overflow-x: auto;
     line-height: normal;
     border-radius: $border-radius;
-    border: 1px solid rgba(38,50,56,0.1);
+    border: 1px solid rgba(38, 50, 56, 0.1);
 
     code {
       background-color: transparent;
+      color: white;
 
-      &:before, &:after {
+      &:before,
+      &:after {
         content: none;
       }
     }
@@ -177,15 +285,12 @@ footer {
 
   code {
     font-family: Courier, monospace;
-    background-color: rgba(38,50,56,0.04);
-    padding: 0.1em 0 0.2em 0;
+    background-color: rgba(38, 50, 56, 0.04);
+    padding: 0.1em 0.2em 0.2em;
     font-size: 1em;
     border-radius: $border-radius;
-
-    &:before, &:after {
-      letter-spacing: -0.2em;
-      content: "\00a0";
-    }
+    color: $red;
+    border: 1px solid rgba(38, 50, 56, 0.1);
   }
 
   p:last-of-type {
@@ -205,10 +310,17 @@ footer {
     box-sizing: content-box;
   }
 
-  ul, ol {
+  ul,
+  ol {
     padding-left: 2em;
     margin: 0;
     margin-bottom: 1em;
+    font-family: $base-font, $base-font-family;
+    font-weight: $base-font-weight;
+    line-height: $base-line-height;
+    > li {
+      margin: 1em 0;
+    }
   }
 
   table {
@@ -232,7 +344,8 @@ footer {
     }
   }
 
-  table th, table td {
+  table th,
+  table td {
     padding: 6px 13px;
     border: 1px solid #ddd;
   }

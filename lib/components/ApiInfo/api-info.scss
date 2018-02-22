@@ -9,6 +9,10 @@
   @media (max-width: $right-panel-squash-breakpoint) {
     width: 100%;
   }
+
+  @media (max-width: $side-menu-mobile-breakpoint) {
+    padding-top: $section-spacing + 20px;
+  }
 }
 
 .openapi-button {
@@ -17,8 +21,13 @@
   font-weight: normal;
   margin-left: 0.5em;
   padding: 3px 8px 4px;
+  display: inline-block;
 }
 
 :host /deep/ [section] {
   padding-top: 2 * $section-spacing;
+}
+
+:host /deep/ h2[section] {
+  padding-top: $section-spacing;
 }

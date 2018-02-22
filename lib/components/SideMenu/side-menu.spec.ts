@@ -2,16 +2,16 @@
 
 import { getChildDebugElement } from '../../../tests/helpers';
 import { Component } from '@angular/core';
-import { OptionsService } from '../../services/index';
+import { OptionsService, MenuItem } from '../../services/index';
 
 import {
   inject,
   async
 } from '@angular/core/testing';
 
-import { TestBed } from '@angular/core/testing';
+import { TestBed, ComponentFixture } from '@angular/core/testing';
 
-import { MethodsList, SideMenu } from '../index';
+import { OperationsList, SideMenu } from '../index';
 
 import { SpecManager } from '../../utils/spec-manager';
 
@@ -19,23 +19,28 @@ let testOptions;
 
 describe('Redoc components', () => {
   beforeEach(() => {
-    TestBed.configureTestingModule({ declarations: [ TestAppComponent ] });
+    TestBed.configureTestingModule({ declarations: [ TestAppComponent, OperationsList ] });
   });
   describe('SideMenu Component', () => {
     let builder;
-    let component;
-    let fixture;
+    let component: SideMenu;
+    let fixture: ComponentFixture<TestAppComponent>;
+    let specMgr;
 
-    beforeEach(async(inject([SpecManager, OptionsService],
-      ( specMgr, opts) => {
+    beforeEach(inject([SpecManager, OptionsService],
+      (_specMgr, opts) => {
 
       testOptions = opts;
       testOptions.options = {
         scrollYOffset: () => 0,
         $scrollParent: window
       };
-      return specMgr.load('/tests/schemas/extended-petstore.yml');
-    })));
+      specMgr = _specMgr;
+    }));
+
+    beforeEach(done => {
+      specMgr.load('/tests/schemas/extended-petstore.yml').then(done, done.fail);
+    });
 
     beforeEach(() => {
       fixture = TestBed.createComponent(TestAppComponent);
@@ -48,8 +53,34 @@ describe('Redoc components', () => {
     });
 
     it('should init component and component data', () => {
-      expect(component).not.toBeNull();
-      expect(component.data).not.toBeNull();
+      should.exist(component);
+    });
+
+    it('should clear active item and cat captions on change to null', () => {
+      component.activeCatCaption = 'test';
+      component.activeItemCaption = 'test';
+      component.changed(null);
+      component.activeCatCaption.should.be.equal('');
+      component.activeItemCaption.should.be.equal('');
+    });
+
+    it('should set active item and cat captions on change event', () => {
+      let parentItem: MenuItem = {
+        id: 'id',
+        name: 'Item'
+      };
+      component.changed(parentItem);
+      component.activeCatCaption.should.be.equal(parentItem.name);
+      component.activeItemCaption.should.be.equal('');
+
+      let childItem: MenuItem = {
+        id: 'id2',
+        name: 'Child',
+        parent: parentItem
+      };
+      component.changed(childItem);
+      component.activeCatCaption.should.be.equal(parentItem.name);
+      component.activeItemCaption.should.be.equal(childItem.name);
     });
   });
 });
@@ -59,7 +90,7 @@ describe('Redoc components', () => {
   selector: 'test-app',
   template:
       `<side-menu></side-menu>
-      <methods-list></methods-list>`
+      <operations-list></operations-list>`
 })
 class TestAppComponent {
 }

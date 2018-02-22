@@ -1,8 +1,16 @@
 'use strict';
 
 import { Injectable } from '@angular/core';
-import * as slugify from 'slugify';
+import slugify from 'slugify';
 import * as Remarkable from 'remarkable';
+import { StringMap } from './';
+
+function HTMLescape(html: string): string {
+  return (document.createElement('div')
+    .appendChild(document.createTextNode(html))
+    .parentNode as Element)
+    .innerHTML;
+}
 
 declare var Prism: any;
 const md = new Remarkable({
@@ -13,20 +21,23 @@ const md = new Remarkable({
   highlight: (str, lang) => {
     if (lang === 'json') lang = 'js';
     let grammar = Prism.languages[lang];
-    //fallback to clike
-    if (!grammar) return str;
+    // fallback to click
+    if (!grammar) return HTMLescape(str);
     return Prism.highlight(str, grammar);
   }
 });
 
-interface HeadersHandler {
-  open: Function;
-  close: Function;
+export interface MarkdownHeading {
+  title?: string;
+  id: string;
+  slug?: string;
+  content?: string;
+  children?: StringMap<MarkdownHeading>;
 }
 
-@Injectable()
 export class MdRenderer {
-  public firstLevelHeadings: string[] = [];
+  public headings: StringMap<MarkdownHeading> = {};
+  currentTopHeading: MarkdownHeading;
 
   private _origRules:any = {};
   private _preProcessors:Function[] = [];
@@ -48,20 +59,82 @@ export class MdRenderer {
     md.renderer.rules.heading_close = this._origRules.close;
   }
 
+  saveHeading(title: string, parent:MarkdownHeading = {id:null, children: this.headings}) :MarkdownHeading {
+    // if title contains some non-ASCII characters (e.g. chinese) slugify returns empty string
+    let slug = slugify(title) || title;
+    let id = slug;
+    if (parent && parent.id) id = `${parent.id}/${id}`;
+    parent.children = parent.children || {};
+    parent.children[id] = {
+      title,
+      id,
+      slug
+    };
+    return parent.children[id];
+  }
+
+  flattenHeadings(container: StringMap<MarkdownHeading>): MarkdownHeading[] {
+    if (!container) return [];
+    let res = [];
+    Object.keys(container).forEach(k => {
+      let heading = container[k];
+      res.push(heading);
+      res.push(...this.flattenHeadings(heading.children));
+    });
+    return res;
+  }
+
+  attachHeadingsContent(rawText:string) {
+    const buildRegexp = heading => new RegExp(
+      `<h\\d section="section/${heading.id}">`
+    );
+
+    const tmpEl = document.createElement('DIV');
+
+    const html2Str = html => {
+      tmpEl.innerHTML = html;
+      return tmpEl.innerText;
+    };
+
+    let flatHeadings = this.flattenHeadings(this.headings);
+    if (flatHeadings.length < 1) return;
+    let prevHeading = flatHeadings[0];
+
+    let prevPos = rawText.search(buildRegexp(prevHeading));
+    for (let i=1; i < flatHeadings.length; i++) {
+      let heading = flatHeadings[i];
+      let currentPos = rawText.substr(prevPos + 1).search(buildRegexp(heading)) + prevPos + 1;
+      prevHeading.content = html2Str(rawText.substring(prevPos, currentPos));
+
+      prevHeading = heading;
+      prevPos = currentPos;
+    }
+    prevHeading.content = html2Str(rawText.substring(prevPos));
+  }
+
   headingOpenRule(tokens, idx) {
-    if (tokens[idx].hLevel !== 1 ) {
+    if (tokens[idx].hLevel > 2 ) {
       return this._origRules.open(tokens, idx);
     } else {
       let content = tokens[idx + 1].content;
-      this.firstLevelHeadings.push(content);
-      let contentSlug = slugify(content);
-      return `<h${tokens[idx].hLevel} section="section/${contentSlug}">` +
-        `<a class="share-link" href="#section/${contentSlug}"></a>`;
+      if (tokens[idx].hLevel === 1 ) {
+        this.currentTopHeading = this.saveHeading(content);
+        let id = this.currentTopHeading.id;
+        return `<h${tokens[idx].hLevel} section="section/${id}">` +
+          `<a class="share-link" href="#section/${id}"></a>` +
+          `<a name="${id.toLowerCase()}"></a>`;
+      } else if (tokens[idx].hLevel === 2 ) {
+        let heading = this.saveHeading(content, this.currentTopHeading);
+        let contentSlug = `${heading.id}`;
+        return `<h${tokens[idx].hLevel} section="section/${heading.id}">` +
+          `<a class="share-link" href="#section/${contentSlug}"></a>` +
+          `<a name="${heading.slug.toLowerCase()}"></a>`;
+      }
     }
   }
 
   headingCloseRule(tokens, idx) {
-    if (tokens[idx].hLevel !== 1 ) {
+    if (tokens[idx].hLevel > 2 ) {
       return this._origRules.close(tokens, idx);
     } else {
       return `</h${tokens[idx].hLevel}>\n`;
@@ -81,6 +154,8 @@ export class MdRenderer {
     }
 
     let res =  md.render(text);
+
+    this.attachHeadingsContent(res);
 
     if (!this.raw) {
       this.restoreOrigRules();

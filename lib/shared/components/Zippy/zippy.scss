@@ -14,8 +14,8 @@ $zippy-redirect-bg-color: rgba($zippy-redirect-color, .08);
 
 :host {
   // performance optimization
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
+  // transform: translate3d(0, 0, 0);
+  // backface-visibility: hidden;
   overflow: hidden;
   display: block;
 }
@@ -49,11 +49,16 @@ $zippy-redirect-bg-color: rgba($zippy-redirect-color, .08);
     color: $zippy-info-color;
     background-color: $zippy-info-bg-color;
   }
+
+  /deep/ p {
+    font-weight: normal;
+  }
 }
 
 .zippy-indicator svg {
   height: 1.2em;
-  vertical-align: middle;
+  width: 1.2em;
+  vertical-align: top;
   transition: all 0.3s ease;
   transform: rotateZ(-180deg);
 }
@@ -85,6 +90,8 @@ span.zippy-indicator {
   font-size: 1.2em;
   text-align: center;
   display: inline-block;
+  float: left;
+  margin-right: 5px;
 }
 
 .zippy-content {

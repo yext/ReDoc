@@ -10,6 +10,7 @@ $grey9 : #313a47;
 $yext-green : #239f25;
 $yext-red : #f02615;
 $background-color: #fff;
+$border-color: #ccc;
 
 $em-size: 14px;
 
@@ -35,7 +36,7 @@ $headers-font : ProximaNova-Regular;
 $headers-font-family : sans-serif;
 $headers-font-weight : $regular;
 $headers-color : $primary-color;
-$method-headers-color : $primary-color;
+
 $h1: 1.85714285714286em;
 $h2: 1.5714285714285714em;
 $h3: 1.2857142857142858em;
@@ -74,3 +75,14 @@ $border-radius: 2px;
 // texts
 $array-text: 'Array of ';
 $tuple-text: 'Tuple ';
+
+// HTTP Verb colors
+$get-color: #6bbd5b;
+$post-color: #248fb2;
+$put-color: #9b708b;
+$options-color: #d3ca12;
+$patch-color: #e09d43;
+$head-color: #c167e4;
+$delete-color: #e27a7a;
+$basic-color: #999;
+$link-color: #31bbb6;

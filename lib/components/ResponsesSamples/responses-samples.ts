@@ -3,7 +3,7 @@
 import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { BaseComponent, SpecManager } from '../base';
 import JsonPointer from '../../utils/JsonPointer';
-import { statusCodeType } from '../../utils/helpers';
+import { statusCodeType, getJsonLikeSample, getXmlLikeSample } from '../../utils/helpers';
 
 
 function isNumeric(n) {
@@ -11,8 +11,7 @@ function isNumeric(n) {
 }
 
 function hasExample(response) {
-  return ((response.examples && response.examples['application/json']) ||
-    response.schema);
+  return response.schema || getXmlLikeSample(response.examples) || getJsonLikeSample(response.examples)
 }
 
 @Component({
@@ -37,7 +36,11 @@ export class ResponsesSamples extends BaseComponent implements OnInit {
     let responses = this.componentSchema;
     if (!responses) return;
 
+    let hasSuccessResponses = false;
     responses = Object.keys(responses).filter(respCode => {
+      if ((parseInt(respCode) >= 100) && (parseInt(respCode) <=399)) {
+        hasSuccessResponses = true;
+      }
       // only response-codes and "default"
       return ( isNumeric(respCode) || (respCode === 'default'));
     }).map(respCode => {
@@ -50,7 +53,7 @@ export class ResponsesSamples extends BaseComponent implements OnInit {
       }
 
       resp.code = respCode;
-      resp.type = statusCodeType(resp.code);
+      resp.type = statusCodeType(resp.code, hasSuccessResponses);
       return resp;
     })
     .filter(response => hasExample(response));

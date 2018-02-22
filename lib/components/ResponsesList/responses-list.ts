@@ -1,10 +1,16 @@
 'use strict';
 
-import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { BaseComponent, SpecManager } from '../base';
+import { Component,
+   Input,
+   OnInit,
+   AfterViewInit,
+   ChangeDetectionStrategy,
+   ChangeDetectorRef
+ } from '@angular/core';
+import { BaseSearchableComponent, SpecManager } from '../base';
 import JsonPointer from '../../utils/JsonPointer';
 import { statusCodeType } from '../../utils/helpers';
-import { OptionsService } from '../../services/index';
+import { OptionsService, AppStateService } from '../../services/index';
 import { SchemaHelper } from '../../services/schema-helper.service';
 
 function isNumeric(n) {
@@ -17,14 +23,18 @@ function isNumeric(n) {
   styleUrls: ['./responses-list.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ResponsesList extends BaseComponent implements OnInit {
+export class ResponsesList extends BaseSearchableComponent implements OnInit {
   @Input() pointer:string;
 
   responses: Array<any>;
   options: any;
 
-  constructor(specMgr:SpecManager, optionsMgr:OptionsService) {
-    super(specMgr);
+  constructor(specMgr:SpecManager,
+    optionsMgr:OptionsService,
+    app: AppStateService,
+    private cdr: ChangeDetectorRef
+  ) {
+    super(specMgr, app);
     this.options = optionsMgr.options;
   }
 
@@ -34,10 +44,16 @@ export class ResponsesList extends BaseComponent implements OnInit {
     let responses = this.componentSchema;
     if (!responses) return;
 
-    responses = Object.keys(responses).filter(respCode => {
+    let hasSuccessResponses = false;
+    let respCodes = Object.keys(responses).filter(respCode => {
+      if ((parseInt(respCode) >= 100) && (parseInt(respCode) <=399)) {
+        hasSuccessResponses = true;
+      }
       // only response-codes and "default"
       return ( isNumeric(respCode) || (respCode === 'default'));
-    }).map(respCode => {
+    });
+
+    responses = respCodes.map(respCode => {
       let resp = responses[respCode];
       resp.pointer = JsonPointer.join(this.pointer, respCode);
       if (resp.$ref) {
@@ -48,7 +64,15 @@ export class ResponsesList extends BaseComponent implements OnInit {
 
       resp.empty = !resp.schema;
       resp.code = respCode;
-      resp.type = statusCodeType(resp.code);
+      resp.type = statusCodeType(resp.code, hasSuccessResponses);
+
+      resp.expanded = false;
+      if (this.options.expandResponses) {
+        if (this.options.expandResponses === 'all' || this.options.expandResponses.has(respCode.toString())) {
+          resp.expanded = true;
+        }
+      }
+
       if (resp.headers && !(resp.headers instanceof Array)) {
         resp.headers = Object.keys(resp.headers).map((k) => {
           let respInfo = resp.headers[k];
@@ -63,8 +87,19 @@ export class ResponsesList extends BaseComponent implements OnInit {
     this.responses = responses;
   }
 
-  trackByCode(idx, el) {
+  trackByCode(_, el) {
     return el.code;
+  }
+
+  ensureSearchIsShown(ptr: string) {
+    if (ptr.startsWith(this.pointer)) {
+      let code = JsonPointer.relative(this.pointer, ptr)[0];
+      if (code && this.componentSchema[code]) {
+        this.componentSchema[code].expanded = true;
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      }
+    }
   }
 
   ngOnInit() {

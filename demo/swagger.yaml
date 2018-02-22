@@ -39,6 +39,7 @@ info:
   termsOfService: 'http://swagger.io/terms/'
   contact:
     email: apiteam@swagger.io
+    url: https://github.com/Rebilly/ReDoc
   x-logo:
     url: 'https://rebilly.github.io/ReDoc/petstore-logo.png'
   license:
@@ -54,6 +55,14 @@ tags:
     description: Access to Petstore orders
   - name: user
     description: Operations about user
+x-tagGroups:
+  - name: General
+    tags:
+      - pet
+      - store
+  - name: User Management
+    tags:
+      - user
 securityDefinitions:
   petstore_auth:
     description: |
@@ -71,6 +80,11 @@ securityDefinitions:
     type: apiKey
     name: api_key
     in: header
+x-servers:
+  - url: //petstore.swagger.io/v2
+    description: Default server
+  - url: //petstore.swagger.io/sandbox
+    description: Sandbox server
 paths:
   /pet:
     post:
@@ -229,6 +243,7 @@ paths:
           in: header
           required: false
           type: string
+          x-example: Bearer <TOKEN>
         - name: petId
           in: path
           description: Pet id to delete
@@ -284,7 +299,7 @@ paths:
       tags:
         - pet
       summary: Finds Pets by status
-      description: Multiple status values can be provided with comma seperated strings
+      description: Multiple status values can be provided with comma separated strings
       operationId: findPetsByStatus
       produces:
         - application/xml
@@ -321,8 +336,9 @@ paths:
       tags:
         - pet
       summary: Finds Pets by tags
-      description: 'Muliple tags can be provided with comma seperated strings. Use tag1, tag2, tag3 for testing.'
+      description: 'Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.'
       operationId: findPetsByTags
+      deprecated: true
       produces:
         - application/xml
         - application/json
@@ -604,6 +620,8 @@ paths:
             type: string
           examples:
             application/json: OK
+            application/xml: <message> OK </message>
+            text/plain: OK
           headers:
             X-Rate-Limit:
               type: integer
@@ -668,6 +686,13 @@ definitions:
         description: Category name
         type: string
         minLength: 1
+      sub:
+        description: Test Sub Category
+        type: object
+        properties:
+          prop1:
+            type: string
+            description: Dumb Property
     xml:
       name: Category
   Dog:
@@ -739,9 +764,6 @@ definitions:
       - photoUrls
     discriminator: petType
     properties:
-      petType:
-        description: Type of a pet
-        type: string
       id:
         description: Pet ID
         allOf:
@@ -778,6 +800,9 @@ definitions:
           - available
           - pending
           - sold
+      petType:
+        description: Type of a pet
+        type: string
     xml:
       name: Pet
   Tag:

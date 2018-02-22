@@ -7,7 +7,7 @@ let config = {
   baseUrl: 'http://localhost:3000',
   framework: 'jasmine2',
   onPrepare: function() {
-    var SpecReporter = require('jasmine-spec-reporter');
+    var SpecReporter = require('jasmine-spec-reporter').SpecReporter;
      // add jasmine spec reporter
     jasmine.getEnv().addReporter(new SpecReporter({displaySpecDuration: true}));
     // load APIs.guru list
@@ -15,6 +15,7 @@ let config = {
       global.apisGuruList = list;
       return browser.getCapabilities().then(function (caps) {
         browser.isIE = caps.get('browserName') === 'internet explorer';
+        browser.isFF = caps.get('browserName') === 'firefox';
       });
     });
   },
@@ -53,6 +54,8 @@ if (travis) {
     maxDuration: 1800*2
   },{
     browserName: 'firefox',
+    platform: 'Windows 10',
+    version: '54.0',
     'tunnel-identifier': process.env.TRAVIS_JOB_NUMBER,
     build: process.env.TRAVIS_BUILD_NUMBER,
     name: 'Redoc Firefox Latest/Win build ' + process.env.TRAVIS_BUILD_NUMBER,

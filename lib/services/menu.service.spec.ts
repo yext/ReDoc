@@ -1,57 +1,53 @@
 'use strict';
-import { Component } from '@angular/core';
+import { Component  } from '@angular/core';
 import {
   inject,
-  async,
   TestBed
 } from '@angular/core/testing';
 
-import { MenuService } from './menu.service';
+import { OperationsList } from '../components/OperationsList/operations-list';
+import { MenuService, MenuItem } from './menu.service';
 import { Hash } from './hash.service';
-import { ScrollService } from './scroll.service';
-import { SpecManager } from '../utils/spec-manager';;
+import { LazyTasksService } from '../shared/components/LazyFor/lazy-for';
+import { ScrollService  } from './scroll.service';
+import { SchemaHelper } from './schema-helper.service';
+import { SpecManager } from '../utils/spec-manager';
 
 describe('Menu service', () => {
   beforeEach(() => {
-    TestBed.configureTestingModule({ declarations: [ TestAppComponent ] });
+    TestBed.configureTestingModule({ declarations: [ TestAppComponent, OperationsList ] });
   });
 
-  let menu, hashService, scroll;
+  let menu:MenuService, hashService, scroll, tasks;
   let specMgr;
 
-  beforeEach(async(inject([SpecManager, Hash, ScrollService],
-  ( _specMgr, _hash, _scroll, _menu) => {
+  beforeEach(inject([SpecManager, Hash, ScrollService, LazyTasksService],
+  ( _specMgr, _hash, _scroll, _tasks) => {
     hashService = _hash;
+    spyOn(hashService, 'update').and.stub();
     scroll = _scroll;
-
+    tasks = _tasks;
     specMgr = _specMgr;
-    return specMgr.load('/tests/schemas/extended-petstore.yml');
-  })));
+    SchemaHelper.setSpecManager(specMgr);
+  }));
+
+  beforeEach(done => {
+    specMgr.load('/tests/schemas/extended-petstore.yml').then(done, done.fail);
+  });
 
   beforeEach(() => {
-    menu = new MenuService(hashService, scroll, specMgr);
+    menu = TestBed.get(MenuService);
     let fixture = TestBed.createComponent(TestAppComponent);
     fixture.detectChanges();
   });
 
-  it('should run hashScroll when hash changed', (done) => {
-    spyOn(menu, 'hashScroll').and.callThrough();
-    hashService.value.subscribe((hash) => {
-      if (!hash) return;
-      expect(menu.hashScroll).toHaveBeenCalled();
-      menu.hashScroll.and.callThrough();
-      done();
-    });
-    hashService.value.next('nonFalsy');
-  });
-
-  it('should scroll to method when location hash is present [jp]', (done) => {
+  it('should scroll to operation when location hash is present [jp]', (done) => {
     let hash = '#tag/pet/paths/~1pet~1findByStatus/get';
-    spyOn(menu, 'hashScroll').and.callThrough();
+    spyOn(menu, 'scrollToActive').and.callThrough();
     spyOn(window, 'scrollTo').and.stub();
     hashService.value.subscribe((hash) => {
       if (!hash) return;
-      expect(menu.hashScroll).toHaveBeenCalled();
+      expect(menu.scrollToActive).toHaveBeenCalled();
       let scrollY = (<jasmine.Spy>window.scrollTo).calls.argsFor(0)[1];
       expect(scrollY).toBeGreaterThan(0);
       (<jasmine.Spy>window.scrollTo).and.callThrough();
@@ -59,14 +55,14 @@ describe('Menu service', () => {
     });
     hashService.value.next(hash);
   });
-
-  it('should scroll to method when location hash is present [operation]', (done) => {
+  //
+  it('should scroll to operation when location hash is present [operation]', (done) => {
     let hash = '#operation/getPetById';
-    spyOn(menu, 'hashScroll').and.callThrough();
+    spyOn(menu, 'scrollToActive').and.callThrough();
     spyOn(window, 'scrollTo').and.stub();
     hashService.value.subscribe((hash) => {
       if (!hash) return;
-      expect(menu.hashScroll).toHaveBeenCalled();
+      expect(menu.scrollToActive).toHaveBeenCalled();
       let scrollY = (<jasmine.Spy>window.scrollTo).calls.argsFor(0)[1];
       expect(scrollY).toBeGreaterThan(0);
       done();
@@ -75,22 +71,113 @@ describe('Menu service', () => {
   });
 
   it('should select next/prev menu item when scrolled down/up', () => {
-    scroll.$scrollParent = document.querySelector('#parent');
-    menu.activeCatIdx.should.be.equal(0);
-    menu.activeMethodIdx.should.be.equal(-1);
-    let nextElTop = menu.getRelativeCatOrItem(1).getBoundingClientRect().top;
+    // enable all items
+    menu.items.forEach(item => item.ready = true);
 
+    scroll.$scrollParent = document.querySelector('#parent');
+    menu.activeIdx.should.be.equal(-1);
+
+    let nextElTop = menu.getEl(1).getBoundingClientRect().top;
     scroll.$scrollParent.scrollTop = nextElTop + 1;
 
     //simulate scroll down
     spyOn(scroll, 'scrollY').and.returnValue(nextElTop + 10);
-    menu.scrollUpdate(true);
-    menu.activeCatIdx.should.be.equal(1);
+    menu.onScroll(true);
+    menu.activeIdx.should.be.equal(1);
 
     scroll.scrollY.and.returnValue(nextElTop - 2);
     scroll.$scrollParent.scrollTop = nextElTop - 1;
-    menu.scrollUpdate(false);
-    menu.activeCatIdx.should.be.equal(0);
+    menu.onScroll(false);
+    menu.activeIdx.should.be.equal(0);
+  });
+
+  describe('buildMenu method', () => {
+    let suitSchema = {
+      tags: [
+        {name: 'tag1', description: 'info1', 'x-traitTag': true},
+        {name: 'tag2', description: 'info2'},
+        {name: 'tag4', description: 'info2', 'x-displayName': 'Tag Four'}
+      ],
+      paths: {
+        test: {
+          put: {
+            tags: ['tag1', 'tag3'],
+            summary: 'test put'
+          },
+          get: {
+            tags: ['tag1', 'tag2'],
+            summary: 'test get'
+          },
+          delete: {
+            tags: ['tag4'],
+            summary: 'test delete'
+          },
+          // no tags
+          post: {
+            summary: 'test post'
+          }
+        }
+      }
+    };
+
+    let items:MenuItem[];
+    beforeEach(() => {
+      menu.items = null;
+      specMgr._schema = suitSchema;
+      menu.buildMenu();
+      items = menu.items;
+    });
+
+    it('should return instance of Array', () => {
+      items.should.be.instanceof(Array);
+    });
+
+    it('should return Array with correct number of items', () => {
+      // 3 - defined tags, 1 - tag3 and 1 operation item for operation without tag
+      items.length.should.be.equal(3 + 1 + 1);
+    });
+
+    it('should append not defined tags to the end of list', () => {
+      let item = items[3];
+      item.name.should.be.equal('tag3');
+      item.items.length.should.be.equal(1);
+      item.items[0].name.should.be.equal('test put');
+    });
+
+    it('should append operation items without tags to the end of list', () => {
+      let operationItem = items[4];
+      operationItem.name.should.be.equal('test post');
+      operationItem.metadata.type.should.be.equal('operation');
+      should.not.exist(operationItem.items);
+    });
+
+    it('should map x-traitTag to empty operation list', () => {
+      let item = items[0];
+      should.not.exist(item.items);
+    });
+
+    it('operations for tag should contain valid pointer and name', () => {
+      for (let item of items) {
+        item.should.be.an.Object();
+        if (item.items) {
+          for (let subItem of item.items) {
+            subItem.should.have.properties(['metadata']);
+            let pointer = subItem.metadata.pointer;
+            let methSchema = specMgr.byPointer(pointer);
+            should.exist(methSchema);
+            if (methSchema.summary) {
+              methSchema.summary.should.be.equal(subItem.name);
+            }
+          }
+        }
+      }
+    });
+
+    it('should use x-displayName to set custom names', () => {
+      let info = items[2];
+      info.id.should.be.equal('tag/tag4');
+      info.name.should.be.equal('Tag Four');
+    });
   });
 });
 
@@ -99,7 +186,7 @@ describe('Menu service', () => {
   template:
       `<div id='parent' style='height: 500px; overflow:auto'>
         <api-info></api-info>
-        <methods-list></methods-list>
+        <operations-list></operations-list>
       </div>`
 })
 class TestAppComponent {

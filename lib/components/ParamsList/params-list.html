@@ -1,10 +1,9 @@
 <h5 class="param-list-header" *ngIf="params.length"> Parameters </h5>
-<template ngFor [ngForOf]="params" let-paramType="$implicit">
+<ng-template ngFor [ngForOf]="params" let-paramType="$implicit">
   <header class="paramType">
     {{paramType.place}} Parameters
     <span class="hint--top-right hint--large" [attr.data-hint]="paramType.placeHint">?</span>
   </header>
-  <br>
   <div class="params-wrap">
     <div *ngFor="let param of paramType.params" class="param">
         <div class="param-name">
@@ -12,6 +11,10 @@
         </div>
         <div class="param-info">
           <div>
+            <span *ngIf='param.type === "array"'
+              class="param-array-format param-collection-format-{{param.collectionFormat}}">
+              {{param | collectionFormat}}
+            </span>
             <span class="param-type {{param.type}}" [ngClass]="{'with-hint': param._displayTypeHint}"
             title="{{param._displayTypeHint}}"> {{param._displayType}} {{param._displayFormat}}</span>
             <span class="param-range" *ngIf="param._range"> {{param._range}} </span>
@@ -19,8 +22,16 @@
             <div class="param-default" *ngIf="param.default != null">
               <span class="param-default-value">{{param.default | json}}</span>
             </div>
-            <div *ngIf="param.enum" class="param-enum">
-              <span *ngFor="let enumItem of param.enum" class="param-enum-value {{enumItem.type}}"> {{enumItem.val | json}} </span>
+            <div class="param-example" *ngIf="param.example != null">
+              <span class="param-example-value">{{param.example | json}}</span>
+            </div>
+            <div *ngIf="param.enum || param._enumItem" class="param-enum">
+              <span *ngFor="let enumItem of param.enum" class="param-enum-value {{enumItem.type}}">
+                {{enumItem.val | json}}
+              </span>
+              <span *ngIf="param._enumItem" class="param-enum-value {{param._enumItem.type}}">
+                {{param._enumItem.val | json}}
+              </span>
             </div>
             <span *ngIf="param.pattern" class="param-pattern">{{param.pattern}}</span>
           </div>
@@ -28,7 +39,7 @@
         </div>
     </div>
   </div>
-</template>
+</ng-template>
 
 <div *ngIf="bodyParam">
   <h5 class="param-list-header" *ngIf="bodyParam"> Request Body </h5>

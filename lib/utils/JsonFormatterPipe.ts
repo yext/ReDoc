@@ -35,6 +35,8 @@ function valueToHTML(value) {
     level++;
     output += arrayToHTML(value);
     level--;
+  } else if (value && value.constructor === Date) {
+    output += decorateWithSpan('"' + value.toISOString() + '"', 'type-string');
   } else if (valueType === 'object') {
     level++;
     output += objectToHTML(value);
@@ -42,7 +44,7 @@ function valueToHTML(value) {
   } else if (valueType === 'number') {
     output += decorateWithSpan(value, 'type-number');
   } else if (valueType === 'string') {
-    if (/^(http|https):\/\/[^\\s]+$/.test(value)) {
+    if (/^(http|https):\/\/[^\s]+$/.test(value)) {
       output += decorateWithSpan('"', 'type-string') + '<a href="' + value + '">' + htmlEncode(value) + '</a>' +
         decorateWithSpan('"', 'type-string');
     } else {
